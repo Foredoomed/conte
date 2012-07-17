@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testng-results skipped="0" failed="0" total="1" passed="1">
+  <reporter-output>
+  </reporter-output>
+  <suite name="Default suite" duration-ms="354" started-at="2012-07-17T21:52:07Z" finished-at="2012-07-17T21:52:07Z">
+    <groups>
+    </groups>
+    <test name="Default test" duration-ms="354" started-at="2012-07-17T21:52:07Z" finished-at="2012-07-17T21:52:07Z">
+      <class name="org.conte.test.crud.SaveOrUpdateTest">
+        <test-method status="PASS" signature="open()[pri:0, instance:org.conte.test.crud.SaveOrUpdateTest@47171b26]" name="open" is-config="true" duration-ms="312" started-at="2012-07-17T21:52:07Z" finished-at="2012-07-17T21:52:07Z">
+        </test-method> <!-- open -->
+        <test-method status="PASS" signature="save()[pri:0, instance:org.conte.test.crud.SaveOrUpdateTest@47171b26]" name="save" duration-ms="30" started-at="2012-07-17T21:52:07Z" finished-at="2012-07-17T21:52:07Z">
+        </test-method> <!-- save -->
+      </class> <!-- org.conte.test.crud.SaveOrUpdateTest -->
+    </test> <!-- Default test -->
+  </suite> <!-- Default suite -->
+</testng-results>
