@@ -30,6 +30,8 @@ public class Conte extends ActiveRecord {
 	private String name;
 	private String address;
 	private String city;
+	
+	
 
 	public int getId() {
 		return id;

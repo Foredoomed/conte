@@ -13,25 +13,8 @@
  *  limitations under the License. 
  */
 
+package org.conte.annotation;
 
-package org.conte.exception;
+public @interface HasOneThrough {
 
-public class ExcuteQueryException extends RuntimeException{
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	public ExcuteQueryException(){
-		super();
-	}
-	
-	public ExcuteQueryException(Throwable cause){
-		super(cause);
-	}
-	
-	public ExcuteQueryException(String msg){
-		super(msg);
-	}
 }

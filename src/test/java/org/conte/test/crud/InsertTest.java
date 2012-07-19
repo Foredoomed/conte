@@ -27,6 +27,9 @@ public class InsertTest {
 				null);
 	}
 	
+	/**
+	 * Single table insert
+	 */
 	@Test
 	public void insert(){
 		Conte conte = new Conte();
@@ -35,5 +38,19 @@ public class InsertTest {
 		conte.setCity("d");
 		conte.setName("d");
 		conte.save();
+	}
+	
+	/**
+	 * Multiple tables insert
+	 */
+	@Test
+	public void insertMultipleTables(){
+		Conte conte = Conte.find(Conte.class, 6);
+		
+		ConteOne co = new ConteOne();
+		co.setConte(conte);
+		co.setId(1);
+		co.setName("a");
+		co.save();
 	}
 }

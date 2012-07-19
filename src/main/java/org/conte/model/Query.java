@@ -18,18 +18,18 @@ package org.conte.model;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.conte.annotation.Id;
+import org.conte.common.AnnotationAttributes;
+import org.conte.common.AnnotationUtils;
+import org.conte.common.DbUtils;
 import org.conte.db.DB;
-import org.conte.db.DbUtils;
 import org.conte.exception.ExcuteQueryException;
 
 public class Query {
@@ -63,14 +63,23 @@ public class Query {
 			StringBuilder values = new StringBuilder();
 			sb.append("insert into " + obj.getClass().getSimpleName() + "(");
 			values.append("values(");
+			AnnotationAttributes attrs = AnnotationUtils.getBelongsTo(obj
+					.getClass());
 			for (int i = 0; i < pd.length; i++) {
 				if ("class".equals(pd[i].getName())) {
 					continue;
 				}
-				sb.append(pd[i].getName());
 				Method getter = pd[i].getReadMethod();
 				Object value = getter.invoke(obj);
+				if (pd[i].getPropertyType().equals(attrs.get("fieldType"))) {
+					sb.append(attrs.get("column")).append(",");
+					values.append("'")
+							.append(AnnotationUtils.getPrimarykeyValue(value))
+							.append("'").append(",");
+					continue;
+				}
 
+				sb.append(pd[i].getName());
 				values.append("'").append(value).append("'");
 
 				if (i != pd.length - 1) {
@@ -78,6 +87,7 @@ public class Query {
 					values.append(",");
 				}
 			}
+
 			sb.append(") ");
 			values.append(")");
 
@@ -86,13 +96,7 @@ public class Query {
 					+ values.toString());
 			stmt.executeUpdate();
 
-		} catch (SQLException e) {
-			throw new ExcuteQueryException(e);
-		} catch (IllegalArgumentException e) {
-			throw new ExcuteQueryException(e);
-		} catch (IllegalAccessException e) {
-			throw new ExcuteQueryException(e);
-		} catch (InvocationTargetException e) {
+		} catch (Exception e) {
 			throw new ExcuteQueryException(e);
 		} finally {
 			DbUtils.closeQuietly(stmt);
@@ -140,20 +144,8 @@ public class Query {
 			connection = DB.getConnection();
 			stmt = connection.prepareStatement(sb.toString());
 			stmt.executeUpdate();
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			throw new ExcuteQueryException(e);
-		} catch (IllegalArgumentException e) {
-			throw new ExcuteQueryException(e);
-		} catch (IllegalAccessException e) {
-			throw new ExcuteQueryException(e);
-		} catch (InvocationTargetException e) {
-			throw new ExcuteQueryException(e);
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} finally {
 			DbUtils.closeQuietly(stmt);
 		}
@@ -184,17 +176,7 @@ public class Query {
 			stmt = connection.prepareStatement(sb.toString());
 			stmt.setInt(1, (Integer) value);
 			stmt.executeUpdate();
-		} catch (SQLException e) {
-			throw new ExcuteQueryException(e);
-		} catch (SecurityException e) {
-			throw new ExcuteQueryException(e);
-		} catch (NoSuchMethodException e) {
-			throw new ExcuteQueryException(e);
-		} catch (IllegalArgumentException e) {
-			throw new ExcuteQueryException(e);
-		} catch (IllegalAccessException e) {
-			throw new ExcuteQueryException(e);
-		} catch (InvocationTargetException e) {
+		} catch (Exception e) {
 			throw new ExcuteQueryException(e);
 		} finally {
 			DbUtils.closeQuietly(stmt);

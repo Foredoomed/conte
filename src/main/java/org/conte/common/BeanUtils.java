@@ -13,25 +13,14 @@
  *  limitations under the License. 
  */
 
+package org.conte.common;
 
-package org.conte.exception;
+public final class BeanUtils {
 
-public class ExcuteQueryException extends RuntimeException{
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+	private BeanUtils() {
 
-	public ExcuteQueryException(){
-		super();
 	}
 	
-	public ExcuteQueryException(Throwable cause){
-		super(cause);
-	}
 	
-	public ExcuteQueryException(String msg){
-		super(msg);
-	}
+
 }

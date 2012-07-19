@@ -13,7 +13,7 @@
  *  limitations under the License. 
  */
 
-package org.conte.db;
+package org.conte.common;
 
 import java.io.PrintWriter;
 import java.sql.Connection;

@@ -27,6 +27,9 @@ public class SaveOrUpdateTest {
 				null);
 	}
 	
+	/**
+	 * Single table insert or update
+	 */
 	@Test
 	public void save(){
 		Conte conte = new Conte();

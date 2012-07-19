@@ -13,25 +13,16 @@
  *  limitations under the License. 
  */
 
+package org.conte.annotation;
 
-package org.conte.exception;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class ExcuteQueryException extends RuntimeException{
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface BelongsTo {
 
-	public ExcuteQueryException(){
-		super();
-	}
-	
-	public ExcuteQueryException(Throwable cause){
-		super(cause);
-	}
-	
-	public ExcuteQueryException(String msg){
-		super(msg);
-	}
+	String value();
 }
