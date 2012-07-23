@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.conte.annotation.BelongsTo;
+import org.conte.annotation.HasOne;
 import org.conte.annotation.Id;
 
 public final class AnnotationUtils {
@@ -30,52 +31,71 @@ public final class AnnotationUtils {
 
 	}
 
-	public static AnnotationAttributes getBelongsTo(Class<?> clazz) {
-		AnnotationAttributes attrs = new AnnotationAttributes();
-		for (Field field : clazz.getDeclaredFields()) {
+	public static Map<String, Object> getBelongsTo(Object obj) throws Exception {
+		Map<String, Object> attrs = new HashMap<String, Object>();
+		for (Field field : obj.getClass().getDeclaredFields()) {
 			Class<?> fieldType = field.getType();
+			String fieldName = field.getName();
 			Annotation[] annotations = field.getDeclaredAnnotations();
-			for (Annotation ann : annotations) {
-				if (BelongsTo.class.equals(ann.annotationType())) {
-					attrs.put("column", ((BelongsTo) ann).value());
-					attrs.put("fieldType", fieldType);
+			if (annotations.length > 0
+					&& BelongsTo.class.equals(annotations[0].annotationType())) {
+				String foreignKey = ((BelongsTo) annotations[0]).FK();
+				attrs.put("column", foreignKey);
+				attrs.put("fieldType", fieldType);
+				String getterName = BeanUtils.getter(fieldName);
+				Method getter = obj.getClass().getMethod(getterName);
+				Object target = getter.invoke(obj);
+				if (target == null) {
+					break;
 				}
+				Map<String, Object> primaryKey = getPrimaryKey(target);
+				attrs.put("value", primaryKey.get("value"));
+				break;
 			}
+
 		}
 		return attrs;
 	}
 
-	public static Map<String, Object> getPrimarykeyPair(Object obj)
+	public static Map<String, Object> getHasOne(Object obj) throws Exception {
+		Map<String, Object> attrs = new HashMap<String, Object>();
+		for (Field field : obj.getClass().getDeclaredFields()) {
+			Class<?> fieldType = field.getType();
+			String fieldName = field.getName();
+			Annotation[] annotations = field.getDeclaredAnnotations();
+			if (annotations.length > 0
+					&& HasOne.class.equals(annotations[0].annotationType())) {
+				String foreignKey = ((HasOne) annotations[0]).FK();
+				attrs.put("column", foreignKey);
+				attrs.put("fieldType", fieldType);
+				String getterName = BeanUtils.getter(fieldName);
+				Method getter = obj.getClass().getMethod(getterName);
+				Object target = getter.invoke(obj);
+				attrs.put("value", target);
+				break;
+			}
+
+		}
+		return attrs;
+	}
+
+	public static Map<String, Object> getPrimaryKey(Object obj)
 			throws Exception {
-		Map<String, Object> pair = new HashMap<String, Object>();
+		Map<String, Object> attrs = new HashMap<String, Object>();
 		String pkName = null;
 		for (Field field : obj.getClass().getDeclaredFields()) {
-			Annotation[] annotation = field.getDeclaredAnnotations();
-			if (Id.class.equals(annotation[0].annotationType())) {
+			Annotation[] annotations = field.getDeclaredAnnotations();
+			if (annotations.length > 0
+					&& Id.class.equals(annotations[0].annotationType())) {
 				pkName = field.getName();
 				break;
 			}
 		}
-		pair.put("name", pkName);
-		String getterName = "get" + pkName.substring(0, 1).toUpperCase()
-				+ pkName.substring(1);
+		attrs.put("column", pkName);
+		String getterName = BeanUtils.getter(pkName);
 		Method getter = obj.getClass().getMethod(getterName);
-		pair.put("value", getter.invoke(obj));
-		return pair;
+		attrs.put("value", getter.invoke(obj));
+		return attrs;
 	}
 
-	public static Object getPrimarykeyValue(Object obj) throws Exception {
-		String primaryKey = null;
-		for (Field field : obj.getClass().getDeclaredFields()) {
-			Annotation[] annotation = field.getDeclaredAnnotations();
-			if (Id.class.equals(annotation[0].annotationType())) {
-				primaryKey = field.getName();
-				break;
-			}
-		}
-		String getterName = "get" + primaryKey.substring(0, 1).toUpperCase()
-				+ primaryKey.substring(1);
-		Method getter = obj.getClass().getMethod(getterName);
-		return getter.invoke(obj);
-	}
 }

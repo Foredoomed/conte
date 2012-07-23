@@ -28,7 +28,7 @@ public class SaveOrUpdateTest {
 	}
 	
 	/**
-	 * Single table insert or update
+	 * Single table insert
 	 */
 	@Test
 	public void save(){
@@ -45,7 +45,7 @@ public class SaveOrUpdateTest {
 	}
 	
 	@Test
-	public void update(){
+	public void save2(){
 		Conte conte = Conte.find(Conte.class, 3);
 		conte.setCity("ccc");
 		conte.saveOrUpdate();

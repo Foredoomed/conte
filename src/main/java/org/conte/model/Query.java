@@ -23,14 +23,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.conte.annotation.Id;
-import org.conte.common.AnnotationAttributes;
 import org.conte.common.AnnotationUtils;
 import org.conte.common.DbUtils;
 import org.conte.db.DB;
 import org.conte.exception.ExcuteQueryException;
+
+import com.mysql.jdbc.Statement;
 
 public class Query {
 
@@ -63,22 +65,27 @@ public class Query {
 			StringBuilder values = new StringBuilder();
 			sb.append("insert into " + obj.getClass().getSimpleName() + "(");
 			values.append("values(");
-			AnnotationAttributes attrs = AnnotationUtils.getBelongsTo(obj
+			Map<String, Object> belongsTo = AnnotationUtils.getBelongsTo(obj
 					.getClass());
+			Map<String, Object> primaryKey = AnnotationUtils.getPrimaryKey(obj);
+			Map<String, Object> hasOne = AnnotationUtils.getHasOne(obj);
 			for (int i = 0; i < pd.length; i++) {
 				if ("class".equals(pd[i].getName())) {
 					continue;
 				}
-				Method getter = pd[i].getReadMethod();
-				Object value = getter.invoke(obj);
-				if (pd[i].getPropertyType().equals(attrs.get("fieldType"))) {
-					sb.append(attrs.get("column")).append(",");
-					values.append("'")
-							.append(AnnotationUtils.getPrimarykeyValue(value))
+
+				if (pd[i].getPropertyType().equals(belongsTo.get("fieldType"))) {
+					sb.append(belongsTo.get("column")).append(",");
+					values.append("'").append(primaryKey.get("value"))
 							.append("'").append(",");
 					continue;
 				}
+				if (pd[i].getPropertyType().equals(hasOne.get("fieldType"))) {
 
+					continue;
+				}
+				Method getter = pd[i].getReadMethod();
+				Object value = getter.invoke(obj);
 				sb.append(pd[i].getName());
 				values.append("'").append(value).append("'");
 
@@ -92,8 +99,78 @@ public class Query {
 			values.append(")");
 
 			connection = DB.getConnection();
+			connection.setAutoCommit(false);
+			if ((Integer) primaryKey.get("value") == 0) {
+				stmt = connection.prepareStatement(
+						sb.toString() + values.toString(),
+						Statement.RETURN_GENERATED_KEYS);
+			} else {
+				stmt = connection.prepareStatement(sb.toString()
+						+ values.toString());
+			}
+			stmt.executeUpdate();
+			if (hasOne.get("column") != null) {
+				if ((Integer) primaryKey.get("value") == 0) {
+					ResultSet generatedKey = stmt.getGeneratedKeys();
+					if (generatedKey.next()) {
+						primaryKey.put("value", generatedKey.getInt(1));
+					}
+				}
+				saveHasOne(hasOne, primaryKey);
+			}
+			connection.commit();
+		} catch (Exception e) {
+			throw new ExcuteQueryException(e);
+		} finally {
+			DbUtils.closeQuietly(stmt);
+		}
+
+	}
+
+	public void saveHasOne(Map<String, Object> hasOne,
+			Map<String, Object> primaryKey) {
+		PreparedStatement stmt = null;
+		Connection connection = null;
+
+		try {
+			Object obj = hasOne.get("value");
+			PropertyDescriptor[] pd = handler.getPropertyDescriptors(obj
+					.getClass());
+			StringBuilder sb = new StringBuilder();
+			StringBuilder values = new StringBuilder();
+			sb.append("insert into " + obj.getClass().getSimpleName() + "(");
+			values.append("values(");
+			Map<String, Object> belongsTo = AnnotationUtils.getBelongsTo(obj);
+			for (int i = 0; i < pd.length; i++) {
+				if ("class".equals(pd[i].getName())) {
+					continue;
+				}
+				if (belongsTo.get("fieldType") != null
+						&& pd[i].getPropertyType().equals(
+								belongsTo.get("fieldType"))) {
+					continue;
+				}
+				Method getter = pd[i].getReadMethod();
+				Object value = getter.invoke(obj);
+
+				sb.append(pd[i].getName());
+				values.append("'").append(value).append("'");
+
+				if (i != pd.length - 1) {
+					sb.append(",");
+					values.append(",");
+				}
+			}
+			if (obj != null) {
+				sb.append(",").append(hasOne.get("column")).append(") ");
+				values.append(",'").append(primaryKey.get("value"))
+						.append("')");
+			}
+
+			connection = DB.getConnection();
 			stmt = connection.prepareStatement(sb.toString()
 					+ values.toString());
+
 			stmt.executeUpdate();
 
 		} catch (Exception e) {
@@ -112,17 +189,21 @@ public class Query {
 		try {
 			PropertyDescriptor[] pd = handler.getPropertyDescriptors(obj
 					.getClass());
-			String primaryKey = null;
-			for (Field field : obj.getClass().getDeclaredFields()) {
-				Annotation[] annotation = field.getDeclaredAnnotations();
-				if (Id.class.equals(annotation[0].annotationType())) {
-					primaryKey = field.getName();
-					break;
-				}
-			}
+			Map<String, Object> primaryKey = AnnotationUtils.getPrimaryKey(obj);
+			Map<String, Object> foreignKey = AnnotationUtils.getBelongsTo(obj);
+			Map<String, Object> hasOne = AnnotationUtils.getHasOne(obj);
 			for (int i = 0; i < pd.length; i++) {
 				if ("class".equals(pd[i].getName())
-						|| primaryKey.equals(pd[i].getName())) {
+						|| primaryKey.get("column").equals(pd[i].getName())) {
+					continue;
+				}
+				if (pd[i].getPropertyType().equals(foreignKey.get("fieldType"))) {
+					sb.append(foreignKey.get("column")).append(" = ")
+							.append("'").append(foreignKey.get("value"))
+							.append("',");
+					continue;
+				}
+				if (pd[i].getPropertyType().equals(hasOne.get("fieldType"))) {
 					continue;
 				}
 
@@ -132,15 +213,69 @@ public class Query {
 						.append(value).append("'");
 
 				if (i != pd.length - 1) {
-					sb.append(", ");
+					sb.append(",");
 				}
 			}
-			String getterName = "get"
-					+ primaryKey.substring(0, 1).toUpperCase()
-					+ primaryKey.substring(1);
-			Method getter = obj.getClass().getMethod(getterName);
-			Object value = getter.invoke(obj);
-			sb.append(" where ").append(primaryKey).append(" = ").append(value);
+
+			sb.append(" where ").append(primaryKey.get("column")).append("='")
+					.append(primaryKey.get("value")).append("'");
+			connection = DB.getConnection();
+			connection.setAutoCommit(false);
+			stmt = connection.prepareStatement(sb.toString());
+			stmt.executeUpdate();
+
+			if (hasOne.get("column") != null) {
+				if ((Integer) primaryKey.get("value") == 0) {
+					throw new ExcuteQueryException();
+				}
+				updateHasOne(hasOne, primaryKey);
+			}
+			connection.commit();
+		} catch (Exception e) {
+			throw new ExcuteQueryException(e);
+		} finally {
+			DbUtils.closeQuietly(stmt);
+		}
+	}
+
+	private void updateHasOne(Map<String, Object> hasOne,
+			Map<String, Object> foreignKey) {
+		Object obj = hasOne.get("value");
+		StringBuilder sb = new StringBuilder();
+		sb.append("update " + obj.getClass().getSimpleName() + " set ");
+		PreparedStatement stmt = null;
+		Connection connection = null;
+		try {
+			PropertyDescriptor[] pd = handler.getPropertyDescriptors(obj
+					.getClass());
+			Map<String, Object> belongsTo = AnnotationUtils.getBelongsTo(obj);
+			Map<String, Object> primaryKey = AnnotationUtils.getPrimaryKey(obj);
+			for (int i = 0; i < pd.length; i++) {
+				if ("class".equals(pd[i].getName())
+						|| foreignKey.get("column").equals(pd[i].getName())) {
+					continue;
+				}
+				if (pd[i].getPropertyType().equals(belongsTo.get("fieldType"))) {
+					continue;
+				}
+
+				Method getter = pd[i].getReadMethod();
+				Object value = getter.invoke(obj);
+				sb.append(pd[i].getName()).append("=").append("'")
+						.append(value).append("'");
+
+				if (i != pd.length - 1) {
+					sb.append(",");
+				}
+			}
+			if (obj != null) {
+				sb.append(",").append(hasOne.get("column")).append("=")
+						.append("'").append(foreignKey.get("value"))
+						.append("'");
+			}
+
+			sb.append(" where ").append(primaryKey.get("column")).append("='")
+					.append(primaryKey.get("value")).append("'");
 			connection = DB.getConnection();
 			stmt = connection.prepareStatement(sb.toString());
 			stmt.executeUpdate();

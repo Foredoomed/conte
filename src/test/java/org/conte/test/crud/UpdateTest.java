@@ -26,11 +26,27 @@ public class UpdateTest {
 		db.open("com.mysql.jdbc.Driver", "jdbc:mysql://localhost/test", "root",
 				null);
 	}
-	
+
 	@Test
-	public void update(){
+	public void update() {
 		Conte conte = Conte.find(Conte.class, 3);
 		conte.setName("ccc");
+		conte.update();
+	}
+
+	@Test
+	public void UpdateBelongsTo() {
+		Conte conte = Conte.find(Conte.class, 5);
+		ConteOne conteone = ConteOne.find(ConteOne.class, 1);
+		conteone.setConte(conte);
+		conteone.update();
+	}
+	
+	@Test
+	public void UpdateHasOne(){
+		Conte conte = Conte.find(Conte.class, 5);
+		ConteOne conteOne = ConteOne.find(ConteOne.class, 2);
+		conte.setConteOne(conteOne);
 		conte.update();
 	}
 }

@@ -28,12 +28,12 @@ public class InsertTest {
 	}
 	
 	/**
-	 * Single table insert
+	 * Single table insertion
 	 */
 	@Test
 	public void insert(){
 		Conte conte = new Conte();
-		conte.setId(4);
+		conte.setId(7);
 		conte.setAddress("d");
 		conte.setCity("d");
 		conte.setName("d");
@@ -41,16 +41,23 @@ public class InsertTest {
 	}
 	
 	/**
-	 * Multiple tables insert
+	 * Multiple tables insertion
 	 */
 	@Test
 	public void insertMultipleTables(){
-		Conte conte = Conte.find(Conte.class, 6);
+		Conte conte = new Conte();
+		conte.setAddress("e");
+		conte.setCity("e");
+		conte.setName("e");
 		
 		ConteOne co = new ConteOne();
-		co.setConte(conte);
-		co.setId(1);
-		co.setName("a");
-		co.save();
+//		co.setConte(conte);
+//		co.setId(1);
+//		co.setName("a");
+//		co.save();
+		co.setId(2);
+		co.setName("b");
+		conte.setConteOne(co);
+		conte.save();
 	}
 }

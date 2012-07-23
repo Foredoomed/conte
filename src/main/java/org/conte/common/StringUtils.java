@@ -13,15 +13,27 @@
  *  limitations under the License. 
  */
 
-package org.conte.annotation;
+package org.conte.common;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public final class StringUtils {
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface HasOne {
-	String FK();
+	private StringUtils() {
+
+	}
+
+	/**
+	 * Changes the first character of a string to upper case.
+	 * 
+	 * @param source
+	 * @return
+	 */
+	public static String capitalize(String source) {
+		int strLen;
+		if (source == null || (strLen = source.length()) == 0) {
+			return source;
+		}
+		return new StringBuilder(strLen)
+				.append(Character.toTitleCase(source.charAt(0)))
+				.append(source.substring(1)).toString();
+	}
 }

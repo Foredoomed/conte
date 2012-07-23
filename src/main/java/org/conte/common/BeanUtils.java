@@ -20,7 +20,15 @@ public final class BeanUtils {
 	private BeanUtils() {
 
 	}
-	
-	
+
+	public static String getter(String fieldName) {
+		int strLen;
+		if (fieldName == null || (strLen = fieldName.length()) == 0) {
+			throw new RuntimeException(
+					"Field name can not be null or empty for the getter method");
+		}
+		return new StringBuilder(strLen).append("get")
+				.append(StringUtils.capitalize(fieldName)).toString();
+	}
 
 }
