@@ -15,6 +15,9 @@
 
 package org.conte.test.crud;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.conte.db.DB;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -46,7 +49,17 @@ public class UpdateTest {
 	public void UpdateHasOne(){
 		Conte conte = Conte.find(Conte.class, 5);
 		ConteOne conteOne = ConteOne.find(ConteOne.class, 2);
-		conte.setConteOne(conteOne);
+		//conte.setConteOne(conteOne);
+		conte.update();
+	}
+	
+	@Test
+	public void UpdateHasMany(){
+		Conte conte = Conte.find(Conte.class, 13);
+		ConteOne co1 = ConteOne.find(ConteOne.class, 2);
+		List list = new ArrayList();
+		list.add(co1);
+		conte.setList(list);
 		conte.update();
 	}
 }

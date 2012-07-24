@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.conte.annotation.BelongsTo;
+import org.conte.annotation.HasMany;
 import org.conte.annotation.HasOne;
 import org.conte.annotation.Id;
 
@@ -42,6 +43,7 @@ public final class AnnotationUtils {
 				String foreignKey = ((BelongsTo) annotations[0]).FK();
 				attrs.put("column", foreignKey);
 				attrs.put("fieldType", fieldType);
+				attrs.put("fieldName", fieldName);
 				String getterName = BeanUtils.getter(fieldName);
 				Method getter = obj.getClass().getMethod(getterName);
 				Object target = getter.invoke(obj);
@@ -72,12 +74,37 @@ public final class AnnotationUtils {
 				Method getter = obj.getClass().getMethod(getterName);
 				Object target = getter.invoke(obj);
 				attrs.put("value", target);
+				attrs.put("fieldName", fieldName);
 				break;
 			}
 
 		}
 		return attrs;
 	}
+
+	public static Map<String, Object> getHasMany(Object obj) throws Exception {
+		Map<String, Object> attrs = new HashMap<String, Object>();
+		for (Field field : obj.getClass().getDeclaredFields()) {
+			Class<?> fieldType = field.getType();
+			String fieldName = field.getName();
+			Annotation[] annotations = field.getDeclaredAnnotations();
+			if (annotations.length > 0
+					&& HasMany.class.equals(annotations[0].annotationType())) {
+				String foreignKey = ((HasMany) annotations[0]).FK();
+				attrs.put("column", foreignKey);
+				attrs.put("fieldType", fieldType);
+				String getterName = BeanUtils.getter(fieldName);
+				Method getter = obj.getClass().getMethod(getterName);
+				Object target = getter.invoke(obj);
+				attrs.put("value", target);
+				attrs.put("fieldName", fieldName);
+				break;
+			}
+
+		}
+		return attrs;
+	}
+	
 
 	public static Map<String, Object> getPrimaryKey(Object obj)
 			throws Exception {

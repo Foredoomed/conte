@@ -23,12 +23,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.conte.annotation.Id;
 import org.conte.common.AnnotationUtils;
 import org.conte.common.DbUtils;
+import org.conte.db.Connections;
 import org.conte.db.DB;
 import org.conte.exception.ExcuteQueryException;
 
@@ -69,19 +71,22 @@ public class Query {
 					.getClass());
 			Map<String, Object> primaryKey = AnnotationUtils.getPrimaryKey(obj);
 			Map<String, Object> hasOne = AnnotationUtils.getHasOne(obj);
+			Map<String, Object> hasMany = AnnotationUtils.getHasMany(obj);
 			for (int i = 0; i < pd.length; i++) {
 				if ("class".equals(pd[i].getName())) {
 					continue;
 				}
 
-				if (pd[i].getPropertyType().equals(belongsTo.get("fieldType"))) {
+				if (pd[i].getName().equals(belongsTo.get("fieldName"))) {
 					sb.append(belongsTo.get("column")).append(",");
 					values.append("'").append(primaryKey.get("value"))
 							.append("'").append(",");
 					continue;
 				}
-				if (pd[i].getPropertyType().equals(hasOne.get("fieldType"))) {
-
+				if (pd[i].getName().equals(hasOne.get("fieldName"))) {
+					continue;
+				}
+				if (pd[i].getName().equals(hasMany.get("fieldName"))) {
 					continue;
 				}
 				Method getter = pd[i].getReadMethod();
@@ -116,7 +121,17 @@ public class Query {
 						primaryKey.put("value", generatedKey.getInt(1));
 					}
 				}
-				saveHasOne(hasOne, primaryKey);
+				saveHasOne(hasOne.get("value"),
+						String.valueOf(hasOne.get("column")), primaryKey);
+			}
+			if (hasMany.get("column") != null) {
+				if ((Integer) primaryKey.get("value") == 0) {
+					ResultSet generatedKey = stmt.getGeneratedKeys();
+					if (generatedKey.next()) {
+						primaryKey.put("value", generatedKey.getInt(1));
+					}
+				}
+				saveHasMany(hasMany, primaryKey);
 			}
 			connection.commit();
 		} catch (Exception e) {
@@ -127,13 +142,13 @@ public class Query {
 
 	}
 
-	public void saveHasOne(Map<String, Object> hasOne,
+	private void saveHasOne(Object obj, String column,
 			Map<String, Object> primaryKey) {
 		PreparedStatement stmt = null;
 		Connection connection = null;
 
 		try {
-			Object obj = hasOne.get("value");
+
 			PropertyDescriptor[] pd = handler.getPropertyDescriptors(obj
 					.getClass());
 			StringBuilder sb = new StringBuilder();
@@ -145,9 +160,8 @@ public class Query {
 				if ("class".equals(pd[i].getName())) {
 					continue;
 				}
-				if (belongsTo.get("fieldType") != null
-						&& pd[i].getPropertyType().equals(
-								belongsTo.get("fieldType"))) {
+				if (belongsTo.get("fieldName") != null
+						&& pd[i].getName().equals(belongsTo.get("fieldName"))) {
 					continue;
 				}
 				Method getter = pd[i].getReadMethod();
@@ -162,7 +176,7 @@ public class Query {
 				}
 			}
 			if (obj != null) {
-				sb.append(",").append(hasOne.get("column")).append(") ");
+				sb.append(",").append(column).append(") ");
 				values.append(",'").append(primaryKey.get("value"))
 						.append("')");
 			}
@@ -181,6 +195,15 @@ public class Query {
 
 	}
 
+	@SuppressWarnings("unchecked")
+	private void saveHasMany(Map<String, Object> hasMany,
+			Map<String, Object> primaryKey) {
+		List<Object> children = (List<Object>) hasMany.get("value");
+		for (Object obj : children) {
+			saveHasOne(obj, String.valueOf(hasMany.get("column")), primaryKey);
+		}
+	}
+
 	public void update(Object obj) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("update " + obj.getClass().getSimpleName() + " set ");
@@ -192,21 +215,24 @@ public class Query {
 			Map<String, Object> primaryKey = AnnotationUtils.getPrimaryKey(obj);
 			Map<String, Object> foreignKey = AnnotationUtils.getBelongsTo(obj);
 			Map<String, Object> hasOne = AnnotationUtils.getHasOne(obj);
+			Map<String, Object> hasMany = AnnotationUtils.getHasMany(obj);
 			for (int i = 0; i < pd.length; i++) {
 				if ("class".equals(pd[i].getName())
 						|| primaryKey.get("column").equals(pd[i].getName())) {
 					continue;
 				}
-				if (pd[i].getPropertyType().equals(foreignKey.get("fieldType"))) {
+				if (pd[i].getName().equals(foreignKey.get("fieldName"))) {
 					sb.append(foreignKey.get("column")).append(" = ")
 							.append("'").append(foreignKey.get("value"))
 							.append("',");
 					continue;
 				}
-				if (pd[i].getPropertyType().equals(hasOne.get("fieldType"))) {
+				if (pd[i].getName().equals(hasOne.get("fieldName"))) {
 					continue;
 				}
-
+				if (pd[i].getName().equals(hasMany.get("fieldName"))) {
+					continue;
+				}
 				Method getter = pd[i].getReadMethod();
 				Object value = getter.invoke(obj);
 				sb.append(pd[i].getName()).append(" = ").append("'")
@@ -228,7 +254,14 @@ public class Query {
 				if ((Integer) primaryKey.get("value") == 0) {
 					throw new ExcuteQueryException();
 				}
-				updateHasOne(hasOne, primaryKey);
+				updateHasOne(hasOne.get("value"),
+						String.valueOf(hasOne.get("column")), primaryKey);
+			}
+			if (hasMany.get("column") != null) {
+				if ((Integer) primaryKey.get("value") == 0) {
+					throw new ExcuteQueryException();
+				}
+				updateHasMany(hasMany, primaryKey);
 			}
 			connection.commit();
 		} catch (Exception e) {
@@ -238,9 +271,9 @@ public class Query {
 		}
 	}
 
-	private void updateHasOne(Map<String, Object> hasOne,
+	private void updateHasOne(Object obj, String column,
 			Map<String, Object> foreignKey) {
-		Object obj = hasOne.get("value");
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("update " + obj.getClass().getSimpleName() + " set ");
 		PreparedStatement stmt = null;
@@ -255,7 +288,7 @@ public class Query {
 						|| foreignKey.get("column").equals(pd[i].getName())) {
 					continue;
 				}
-				if (pd[i].getPropertyType().equals(belongsTo.get("fieldType"))) {
+				if (pd[i].getName().equals(belongsTo.get("fieldName"))) {
 					continue;
 				}
 
@@ -269,9 +302,8 @@ public class Query {
 				}
 			}
 			if (obj != null) {
-				sb.append(",").append(hasOne.get("column")).append("=")
-						.append("'").append(foreignKey.get("value"))
-						.append("'");
+				sb.append(",").append(column).append("=").append("'")
+						.append(foreignKey.get("value")).append("'");
 			}
 
 			sb.append(" where ").append(primaryKey.get("column")).append("='")
@@ -283,6 +315,15 @@ public class Query {
 			throw new ExcuteQueryException(e);
 		} finally {
 			DbUtils.closeQuietly(stmt);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void updateHasMany(Map<String, Object> hasMany,
+			Map<String, Object> foreignKey) {
+		List<Object> children = (List<Object>) hasMany.get("value");
+		for (Object obj : children) {
+			updateHasOne(obj, String.valueOf(hasMany.get("column")), foreignKey);
 		}
 	}
 

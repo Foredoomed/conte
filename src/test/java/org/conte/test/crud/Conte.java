@@ -15,7 +15,9 @@
 
 package org.conte.test.crud;
 
-import org.conte.annotation.HasOne;
+import java.util.List;
+
+import org.conte.annotation.HasMany;
 import org.conte.annotation.Id;
 import org.conte.model.ActiveRecord;
 
@@ -32,8 +34,11 @@ public class Conte extends ActiveRecord {
 	private String address;
 	private String city;
 
-	@HasOne(FK = "conteId")
-	private ConteOne conteOne;
+	// @HasOne(FK = "conteId")
+	// private ConteOne conteOne;
+
+	@HasMany(FK = "conteId")
+	private List<ConteOne> list;
 
 	public int getId() {
 		return id;
@@ -67,12 +72,20 @@ public class Conte extends ActiveRecord {
 		this.city = city;
 	}
 
-	public ConteOne getConteOne() {
-		return conteOne;
+//	public ConteOne getConteOne() {
+//		return conteOne;
+//	}
+//
+//	public void setConteOne(ConteOne conteOne) {
+//		this.conteOne = conteOne;
+//	}
+
+	public List<ConteOne> getList() {
+		return list;
 	}
 
-	public void setConteOne(ConteOne conteOne) {
-		this.conteOne = conteOne;
+	public void setList(List<ConteOne> list) {
+		this.list = list;
 	}
 
 }

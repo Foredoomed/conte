@@ -15,6 +15,9 @@
 
 package org.conte.test.crud;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.conte.db.DB;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -44,7 +47,7 @@ public class InsertTest {
 	 * Multiple tables insertion
 	 */
 	@Test
-	public void insertMultipleTables(){
+	public void insertHasOne(){
 		Conte conte = new Conte();
 		conte.setAddress("e");
 		conte.setCity("e");
@@ -57,7 +60,26 @@ public class InsertTest {
 //		co.save();
 		co.setId(2);
 		co.setName("b");
-		conte.setConteOne(co);
+		//conte.setConteOne(co);
+		conte.save();
+	}
+	
+	@Test
+	public void insertHasMany(){
+		Conte conte = new Conte();
+		conte.setAddress("f");
+		conte.setCity("f");
+		conte.setName("f");
+		
+		List list = new ArrayList();
+		ConteOne co1 = new ConteOne();
+		co1.setName("f");
+		list.add(co1);
+		
+		ConteOne co2 = new ConteOne();
+		co2.setName("f");
+		list.add(co2);
+		conte.setList(list);
 		conte.save();
 	}
 }
